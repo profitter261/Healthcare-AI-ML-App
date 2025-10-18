@@ -6,7 +6,7 @@ Some of the man use cases is that this app can do:-
 - Length of Stay Prediction (Regression): Forecast patient hospitalization duration for resource planning.
 - Patient Segmentation (Clustering): Group patients into cohorts (e.g., chronic vs. acute, lifestyle-driven vs. genetic-risk).
 
-This app chas features like:-
+This app has features like:-
 - Imaging Diagnostics (CNN): Automate radiology analysis for X-rays, CT, or MRI (e.g., pneumonia detection).
 - Sequence Modeling (RNN/LSTM): Track patient vitals over time to forecast deterioration or readmission.
 - Clinical Report Summarization: Use BioBERT/ClinicalBERT for clinical notes, discharge summaries, drug side effects.
