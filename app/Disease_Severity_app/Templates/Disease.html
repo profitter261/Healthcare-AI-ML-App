@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Health Diagnosis & Severity Predictor</title>
+<!-- Bootstrap Icons CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@400;500;700&display=swap');
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@400;500;700&display=swap');
+
+:root {
+    --glow-color: #1d9bf0;
+    --secondary-glow: #00ffd9;
+    --shadow-light: 0 0 10px rgba(29, 155, 240, 0.6), 0 0 20px rgba(29, 155, 240, 0.4);
+    --text-color: #fff;
+    --input-bg-dark: #1f1f1f;
+    --input-bg-light: #f0f8ff; 
+    --input-text-dark: #0a0a0a;
+    --error-color: #ee5253;
+}
+
+.light-mode {
+    background: #f4f7f6 !important;
+    color: #333 !important;
+    --glow-color: #007bff;
+    --secondary-glow: #00a68c;
+    --shadow-light: 0 5px 15px rgba(0,0,0,0.1);
+    --text-color: #333;
+    --input-bg-dark: #fff;
+    --input-bg-light: #fff; 
+    --input-text-dark: #333;
+    --error-color: #c0392b;
+}
+
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: radial-gradient(circle at center, #0b0c10, #001f3f);
+    color: var(--text-color);
+    transition: background 0.5s, color 0.5s;
+    overflow-x: hidden;
+}
+
+body.light-mode {
+   background: #f4f7f6 !important;
+   color: #333 !important;
+   --glow-color: #007bff;
+   --secondary-glow: #00a68c;
+   --shadow-light: 0 5px 15px rgba(0,0,0,0.1);
+   --text-color: #333;
+   --input-bg-dark: #fff;
+   --input-bg-light: #fff; 
+   --input-text-dark: #333;
+   --error-color: #c0392b;
+}
+
+body.dark-mode {
+   background: radial-gradient(circle at center, #0b0c10, #001f3f);
+   color: var(--text-color);
+}
+
+/* Navigation panels */
+.nav-panel {
+    position: fixed;
+    top: 0;
+    width: 18%;
+    min-width: 180px;
+    max-width: 250px;
+    height: 100vh;
+    background: rgba(255,255,255,0.08); 
+    backdrop-filter: blur(12px);
+    box-shadow: 0 0 20px rgba(0,0,0,0.6);
+    transition: transform 0.5s ease;
+    z-index: 10;
+    padding: 2rem 1rem;
+    overflow-y: auto;
+}
+
+.light-mode .nav-panel {
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.left-nav { left: 0; border-radius: 0 20px 20px 0; transform: translateX(0); }
+.right-nav { right: 0; border-radius: 20px 0 0 20px; transform: translateX(0); }
+.nav-hidden-left { transform: translateX(calc(-1 * (100% + 5px))); }
+.nav-hidden-right { transform: translateX(calc(100% + 5px)); }
+
+.nav-panel h2 { 
+    color: var(--glow-color); 
+    text-align: center; 
+    margin-bottom: 2rem; 
+    font-size: 1.5rem; 
+    text-shadow: 0 0 8px var(--glow-color); 
+}
+
+.light-mode .nav-panel h2 { text-shadow: none; }
+
+.nav-panel ul { list-style: none; padding: 0; }
+.nav-panel li { margin: 1.5rem 0; text-align: center; font-weight: 500; padding: 0; cursor: pointer; transition: all 0.3s ease; }
+
+.nav-panel li a { 
+    color: var(--secondary-glow); 
+    text-decoration: none; 
+    display: flex; 
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+    text-shadow: 0 0 5px rgba(255,255,255,0.2);
+}
+
+.light-mode .nav-panel li a { 
+    color: var(--secondary-glow); 
+    text-shadow: none;
+}
+
+.nav-panel li a:hover { 
+    color: var(--glow-color); 
+    text-shadow: 0 0 10px var(--glow-color); 
+    transform: scale(1.05); 
+}
+
+.light-mode .nav-panel li a:hover { text-shadow: none; color: var(--glow-color); }
+
+.toggle-btn {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0,0,0,0.7);
+    border: 2px solid var(--glow-color);
+    box-shadow: var(--shadow-light);
+    color: var(--glow-color);
+    font-size: 1.2rem;
+    padding: 0.8rem 0.6rem;
+    cursor: pointer;
+    z-index: 30;
+    transition: all 0.5s ease;
+}
+
+.light-mode .toggle-btn {
+    background: #fff;
+    border: 2px solid var(--glow-color);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.toggle-btn:hover { 
+    background: rgba(0,0,0,1); 
+    box-shadow: 0 0 15px var(--glow-color), 0 0 30px var(--glow-color);
+}
+
+.light-mode .toggle-btn:hover { background: #eee; box-shadow: 0 2px 10px var(--glow-color);}
+
+.left-toggle { left: 0; border-radius: 0 10px 10px 0; }
+.right-toggle { right: 0; border-radius: 10px 0 0 10px; }
+.left-toggle.active { left: calc(18% + 5px); border-radius: 10px; } 
+.right-toggle.active { right: calc(18% + 5px); border-radius: 10px; } 
+
+
+/* Toggle buttons */
+.toggle-btn {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid var(--glow-color);
+    box-shadow: var(--shadow-light);
+    color: var(--glow-color);
+    font-size: 1.2rem;
+    padding: 0.8rem 0.6rem;
+    cursor: pointer;
+    z-index: 30;
+    transition: background 0.3s ease, box-shadow 0.3s ease, left 0.5s ease, right 0.5s ease;
+}
+.toggle-btn:hover {
+    background: rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 15px var(--glow-color), 0 0 30px var(--glow-color);
+}
+.left-toggle {
+    left: 0;
+    border-radius: 0 10px 10px 0;
+}
+.right-toggle {
+    right: 0;
+    border-radius: 10px 0 0 10px;
+}
+.left-toggle.active {
+    left: 18%; 
+    border-radius: 10px;
+}
+.right-toggle.active {
+    right: 18%;
+    border-radius: 10px;
+}
+
+/* Center content */
+.center-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    margin-left: 18%;
+    margin-right: 18%;
+    min-height: 100vh;
+    padding: 2rem;
+}
+
+h1.page-title {
+    font-size: 2.5rem;
+    font-family: 'Orbitron', sans-serif;
+    text-shadow: 0 0 10px var(--secondary-glow), 0 0 20px var(--glow-color);
+    color: var(--secondary-glow);
+    margin-bottom: 2rem;
+}
+
+/* Glowing Text */
+.center-content h1 {
+    font-size: 3rem;
+    font-family: 'Orbitron', sans-serif;
+    text-shadow: 0 0 10px #00ffd9, 0 0 20px #1d9bf0;
+    background: linear-gradient(90deg, #00ffd9, #1d9bf0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+body.light-mode .center-content h1 {
+  text-shadow: none; /* remove the neon glow */
+  background: none;  /* remove the gradient */
+  -webkit-text-fill-color: var(--glow-color); /* or pick a readable solid color */
+  color: var(--glow-color); /* fallback for browsers that don't support background-clip */
+}
+
+.center-content p {
+    max-width: 600px;
+    margin-top: 1rem;
+    font-size: 1.1rem;
+    opacity: 1;
+    color: var(--secondary-glow);
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.nav-panel h2 {
+    color: var(--glow-color);
+    text-shadow: 0 0 8px var(--glow-color);
+}
+
+.container {
+    max-width: 750px;
+    width: 100%;
+    padding: 30px;
+    border-radius: 25px;
+    background: rgba(0,255,200,0.05);
+    border: 2px solid var(--secondary-glow);
+    box-shadow: 0 0 30px rgba(0,255,200,0.3);
+}
+
+form { display: grid; gap: 20px; }
+label { font-weight: bold; }
+
+/* Two-column layout for inputs */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* Input & select styling */
+select, input[type="number"] {
+    -moz-appearance: none; 
+    -webkit-appearance: none; 
+    appearance: none;
+    padding: 12px;
+    border-radius: 10px;
+    border: 2px solid var(--secondary-glow);
+    background: #f0f8ff;  /* Light contrasting background for dropdowns */
+    color: #0a0a0a;        /* Dark text for contrast */
+    font-weight: 500;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Custom arrow for select */
+select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cpath fill='%23001f3f' d='M4 6l4 4 4-4z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+}
+
+/* Remove number input spinners */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+
+button { padding: 15px; font-size: 18px; font-weight: bold; border-radius: 15px; border: 2px solid var(--secondary-glow); background: rgba(0,255,200,0.15); cursor: pointer; transition: 0.3s;}
+button:hover { background: var(--secondary-glow); color: var(--text-color); box-shadow: 0 0 40px var(--secondary-glow); transform: translateY(-3px);}
+
+/* Result styling */
+.result {
+    text-align: left;
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: 500;
+    border: 2px solid var(--secondary-glow);
+    border-radius: 15px;
+    padding: 15px;
+    background: rgba(0,255,200,0.05);
+}
+
+.result ul { padding-left: 20px; }
+.result ul li { margin-bottom: 8px; }
+
+/* Theme toggle */
+.theme-toggle {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 40;
+}
+.theme-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.8rem;
+  color: var(--secondary-glow);
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.theme-btn:hover {
+  transform: rotate(20deg);
+}
+
+body.light-mode .theme-btn {
+  color: var(--text-color);
+}
+
+</style>
+</head>
+<body>
+
+<div class="theme-toggle">
+  <button id="themeToggle" class="theme-btn">
+    <i class="bi bi-moon-fill"></i>
+  </button>
+</div>
+
+
+<!-- Navigation Panels -->
+<div class="nav-panel left-nav" id="leftNav">
+    <h2>Navigation</h2>
+    <ul>
+        <li><a href="/"><i class="bi bi-house-door"></i> Home</a></li>
+        <li><a href="/Disease"><i class="bi bi-heart-pulse"></i> Disease Prediction</a></li>
+        <li><a href="/LOS"><i class="bi bi-graph-up"></i> LOS Prediction</a></li>
+        <li><a href="/Cluster"><i class="bi bi-people"></i> Patient Cohorts</a></li>
+        <li><a href="/chat"><i class="bi bi-question-circle"></i> Help</a></li>
+    </ul>
+</div>
+
+<div class="nav-panel right-nav" id="rightNav">
+    <h2>AI Tools</h2>
+    <ul>
+        <li><a href="/Patient"><i class="bi bi-lightbulb"></i> Patient Risk Assessment</a></li>
+        <li><a href="/Summarizer"><i class="bi bi-file-earmark-text"></i> Notes Summarizer</a></li>
+        <li><a href="/Image-Diagnostics"><i class="bi bi-image"></i> Image Diagnostics</a></li>
+        <li><a href="/Senti"><i class="bi bi-chat-dots"></i> Feedback Analysis</a></li>
+        <li><a href="/admin"><i class="bi bi-table"></i> Admin Dashboard</a></li>
+    </ul>
+</div>
+
+<button class="toggle-btn left-toggle" id="leftToggle">☰</button>
+<button class="toggle-btn right-toggle" id="rightToggle">☰</button>
+
+<!-- Center Content -->
+<div class="center-content">
+    <h1 class="page-title">Health Diagnosis & Severity Predictor</h1>
+    <div class="container">
+        <form method="POST">
+            <label>Age:</label><input type="number" name="age" required>
+            <label>Height (cm):</label><input type="number" name="height" step="0.1" required>
+            <label>Weight (kg):</label><input type="number" name="weight" step="0.1" required>
+            <label>Systolic BP:</label><input type="number" name="systolic_bp" required>
+            <label>Diastolic BP:</label><input type="number" name="diastolic_bp" required>
+            <label>Glucose (mg/dL):</label><input type="number" name="glucose" required>
+            <label>Cholesterol (mg/dL):</label><input type="number" name="cholesterol" required>
+            <label>Creatinine (mg/dL):</label><input type="number" name="creatinine" step="0.01" required>
+
+            <label>Diabetes:</label>
+            <select name="diabetes"><option value="0">No</option><option value="1">Yes</option></select>
+
+            <label>Hypertension:</label>
+            <select name="hypertension"><option value="0">No</option><option value="1">Yes</option></select>
+
+            <label>Sex:</label>
+            <select name="sex">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+
+            <button type="submit">Predict</button>
+        </form>
+
+        {% if diagnosis_result %}
+            <div class="result">
+                <h2>Diagnosis: {{ diagnosis_result.disease }}</h2>
+                <h3>Severity Level: {{ diagnosis_result.severity }}</h3>
+            
+                <div class="advice">
+                    <h4>🧠 About this condition:</h4>
+                    {% if diagnosis_result.disease == 'Asthma' %}
+                        <p>Asthma is a chronic respiratory condition that causes inflammation and narrowing of the airways, making it difficult to breathe. Common triggers include allergens, cold air, and exercise.</p>
+                        <p><strong>Precautions:</strong> Avoid known triggers, use prescribed inhalers regularly, and monitor your breathing daily.</p>
+                    {% elif diagnosis_result.disease == 'Chronic Kidney Disease (CKD)' %}
+                        <p>Chronic Kidney Disease involves gradual loss of kidney function over time. It often results from conditions like diabetes or hypertension.</p>
+                        <p><strong>Precautions:</strong> Follow a low-sodium diet, monitor blood pressure and sugar, and stay hydrated as per medical advice.</p>
+                    {% elif diagnosis_result.disease == 'Heart Failure' %}
+                        <p>Heart Failure occurs when the heart cannot pump blood efficiently, leading to fatigue, breathlessness, and fluid buildup.</p>
+                        <p><strong>Precautions:</strong> Limit salt intake, take prescribed medication, and maintain a healthy weight and activity level.</p>
+                    {% elif diagnosis_result.disease == 'Myocardial Infarction' %}
+                        <p>Myocardial Infarction (Heart Attack) happens when blood flow to a part of the heart is blocked, causing tissue damage.</p>
+                        <p><strong>Precautions:</strong> Seek emergency care immediately if symptoms appear. Long term — stop smoking, manage cholesterol, and reduce stress.</p>
+                    {% elif diagnosis_result.disease == 'Pneumonia' %}
+                        <p>Pneumonia is a lung infection that causes inflammation in the air sacs, often filled with fluid, leading to cough, fever, and breathing issues.</p>
+                        <p><strong>Precautions:</strong> Stay hydrated, complete antibiotic treatment, and get plenty of rest.</p>
+                    {% elif diagnosis_result.disease == 'Sepsis' %}
+                        <p>Sepsis is a life-threatening response to infection that can cause tissue damage and organ failure.</p>
+                        <p><strong>Precautions:</strong> Immediate medical attention is critical. Maintain hygiene, and monitor any infection symptoms closely.</p>
+                    {% elif diagnosis_result.disease == 'Stroke' %}
+                        <p>Stroke occurs when blood supply to the brain is interrupted or reduced, depriving brain tissue of oxygen and nutrients.</p>
+                        <p><strong>Precautions:</strong> Manage blood pressure, avoid smoking, and follow rehabilitation exercises regularly.</p>
+                    {% elif diagnosis_result.disease == 'Normal' %}
+                        <p>Your parameters appear normal. Continue maintaining a healthy lifestyle with a balanced diet and regular exercise.</p>
+                    {% endif %}
+                
+                    <h4>🩺 Severity Advice:</h4>
+                    {% if diagnosis_result.severity == 'Mild' %}
+                        <p>✅ Mild condition. Monitor your health and follow your doctor's lifestyle recommendations.</p>
+                    {% elif diagnosis_result.severity == 'Moderate' %}
+                        <p>⚠️ Moderate condition. Consider consulting a healthcare professional soon for personalized management.</p>
+                    {% elif diagnosis_result.severity == 'Severe' %}
+                        <p>❌ Severe condition. Immediate medical attention is strongly advised to prevent complications.</p>
+                    {% endif %}
+                
+                    <p>💡 <strong>Suggestion:</strong> Book an appointment with a doctor for detailed evaluation and ongoing management.</p>
+                </div>
+            </div>
+            {% endif %}
+
+    </div>
+</div>
+
+<script>
+const body = document.body;
+const leftNav = document.getElementById('leftNav');
+const rightNav = document.getElementById('rightNav');
+const leftToggle = document.getElementById('leftToggle');
+const rightToggle = document.getElementById('rightToggle');
+const themeToggle = document.getElementById('themeToggle');
+const themeToggleBtn = document.getElementById('themeToggle');
+const icon = themeToggleBtn.querySelector('i');
+const savedTheme = localStorage.getItem('theme');
+
+// Apply saved theme on load
+if (savedTheme === 'light') {
+  body.classList.add('light-mode');
+  icon.classList.replace('bi-moon-fill', 'bi-sun-fill');
+} else {
+  body.classList.add('dark-mode');
+  icon.classList.replace('bi-sun-fill', 'bi-moon-fill');
+}
+
+// Toggle theme on click
+themeToggleBtn.addEventListener('click', () => {
+  if (body.classList.contains('dark-mode')) {
+    body.classList.remove('dark-mode');
+    body.classList.add('light-mode');
+    icon.classList.replace('bi-moon-fill', 'bi-sun-fill');
+    localStorage.setItem('theme', 'light');
+  } else {
+    body.classList.remove('light-mode');
+    body.classList.add('dark-mode');
+    icon.classList.replace('bi-sun-fill', 'bi-moon-fill');
+    localStorage.setItem('theme', 'dark');
+  }
+});
+
+// === Navigation Toggles ===
+leftToggle.addEventListener('click', () => {
+    const hidden = leftNav.classList.toggle('nav-hidden-left');
+    leftToggle.classList.toggle('active', !hidden);
+});
+
+rightToggle.addEventListener('click', () => {
+    const hidden = rightNav.classList.toggle('nav-hidden-right');
+    rightToggle.classList.toggle('active', !hidden);
+});
+
+// === Responsive reset ===
+function checkScreenSize() {
+    if (window.innerWidth <= 768) {
+        leftToggle.classList.remove('active');
+        rightToggle.classList.remove('active');
+    }
+}
+window.addEventListener('resize', checkScreenSize);
+checkScreenSize();
+</script>
+
+</body>
+</html>
