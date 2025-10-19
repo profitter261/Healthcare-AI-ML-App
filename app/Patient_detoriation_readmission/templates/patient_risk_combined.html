@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patient Risk Prediction</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@400;500;700&display=swap');
+
+/* Root colors */
+:root {
+    --glow-color: #1d9bf0;
+    --secondary-glow: #00ffd9;
+    --shadow-light: 0 0 10px rgba(29,155,240,0.6),0 0 20px rgba(29,155,240,0.4);
+    --text-color: #0a0a0a;
+}
+.dark-mode {
+    --glow-color: #00ffd9;
+    --secondary-glow: #1d9bf0;
+    --shadow-light: 0 0 10px rgba(0,255,217,0.6),0 0 20px rgba(0,255,217,0.4);
+    --text-color: #fff;
+}
+
+body {
+    margin:0; font-family:'Poppins',sans-serif;
+    background: radial-gradient(circle at center, #e9f7ff,#a0c4ff);
+    color: var(--text-color); transition: background 0.5s, color 0.5s;
+}
+
+/* Navigation panels (same endpoints as original) */
+.nav-panel {
+    position: fixed; top:0; width:18%; min-width:180px; max-width:250px; height:100vh;
+    background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-radius:0 20px 20px 0;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4); transition: transform 0.5s; z-index:10; padding:2rem 1rem;
+}
+.dark-mode .nav-panel { background: rgba(255,255,255,0.08); box-shadow:0 0 20px rgba(0,0,0,0.6);}
+.left-nav { left:0; transform: translateX(0); }
+.right-nav { right:0; border-radius:20px 0 0 20px; transform: translateX(0);}
+.nav-hidden-left { transform: translateX(calc(-1*(100%+5px))); }
+.nav-hidden-right { transform: translateX(calc(100%+5px)); }
+
+.nav-panel h2 { color: var(--glow-color); text-align:center; margin-bottom:1rem; text-shadow:0 0 8px var(--glow-color);}
+.nav-panel ul { list-style:none; padding:0;}
+.nav-panel li { margin:1.5rem 0; text-align:center; font-weight:500; padding:0.5rem; cursor:pointer; color: var(--secondary-glow); text-shadow:0 0 5px rgba(255,255,255,0.4); transition:0.3s;}
+.nav-panel li:hover { color: var(--glow-color); text-shadow:0 0 10px var(--glow-color); transform:scale(1.05);}
+.nav-panel li a { text-decoration:none; color:inherit; display:block;}
+
+/* Toggle buttons */
+.toggle-btn { position:fixed; top:50%; transform:translateY(-50%);
+    background: rgba(0,0,0,0.5); border:2px solid var(--glow-color);
+    box-shadow: var(--shadow-light); color: var(--glow-color); font-size:1.2rem;
+    padding:0.8rem 0.6rem; cursor:pointer; z-index:30; transition:all 0.3s ease;
+}
+.toggle-btn:hover { background:rgba(0,0,0,0.8); box-shadow:0 0 15px var(--glow-color),0 0 30px var(--glow-color);}
+.left-toggle { left:0; border-radius:0 10px 10px 0;}
+.right-toggle { right:0; border-radius:10px 0 0 10px;}
+.left-toggle.active { left:18%; border-radius:10px;}
+.right-toggle.active { right:18%; border-radius:10px;}
+
+/* Center content */
+.center-content { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; min-height:100vh; padding:2rem; text-align:center; }
+
+h1.page-title {
+    font-size:2.5rem; font-family:'Orbitron',sans-serif;
+    text-shadow:0 0 15px var(--secondary-glow),0 0 40px var(--glow-color);
+    background: linear-gradient(90deg,var(--secondary-glow),var(--glow-color));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:2rem;
+}
+
+/* Form container */
+.prediction-container {
+    max-width:900px; width:100%; padding:30px; border-radius:20px;
+    background: rgba(255,255,255,0.1); backdrop-filter:blur(8px);
+    box-shadow:0 0 30px rgba(0,255,217,0.3); border:2px solid var(--secondary-glow);
+}
+
+/* Two-column layout */
+.risk-form { display:grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap:20px; margin-top:1rem; }
+.input-group { text-align:left; }
+.input-group label { display:block; margin-bottom:0.5rem; font-weight:500; color: var(--secondary-glow); text-shadow:0 0 3px var(--secondary-glow); }
+.form-input { width:100%; padding:0.8rem 1rem; border-radius:8px; border:2px solid var(--secondary-glow); background-color: rgba(255,255,255,0.1); color: var(--text-color); font-family:'Poppins',sans-serif; font-size:1rem; transition:0.3s;}
+.dark-mode .form-input { background-color: rgba(0,0,0,0.4); color: var(--text-color); border-color: var(--secondary-glow);}
+.form-input:focus { outline:none; border-color: var(--glow-color); box-shadow:0 0 15px var(--glow-color);}
+.form-input[type=number]::-webkit-inner-spin-button, .form-input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0;}
+.form-input[type=number] { -moz-appearance:textfield; }
+
+/* Predict button */
+.predict-button { grid-column:1 / -1; padding:1rem 2rem; font-size:1.1rem; font-weight:700; border:none; border-radius:10px; background: linear-gradient(90deg,var(--secondary-glow),var(--glow-color)); color:#0a0a0a; cursor:pointer; box-shadow:0 0 15px var(--secondary-glow); transition:0.3s;}
+.predict-button:hover { box-shadow:0 0 25px var(--glow-color),0 0 50px var(--secondary-glow); transform:translateY(-2px); }
+
+/* Theme toggle */
+.theme-toggle { position:absolute; top:1rem; right:1rem; z-index:40; }
+.switch { position:relative; display:inline-block; width:60px; height:34px; }
+.switch input { display:none; }
+.slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#ccc; border-radius:34px; transition:0.4s; }
+.slider:before { position:absolute; content:""; height:26px; width:26px; left:4px; bottom:4px; background:white; border-radius:50%; transition:0.4s; }
+input:checked + .slider { background-color: var(--secondary-glow); }
+input:checked + .slider:before { transform: translateX(26px); }
+
+/* Results Section */
+.results-section { display:none; width:100%; margin-top:20px;}
+.results-section.visible { display:block; }
+.result-card { padding:1.5rem; margin-bottom:1.5rem; border-radius:15px; background: rgba(255,255,255,0.05); box-shadow: var(--shadow-light); border:2px solid var(--secondary-glow);}
+.result-title { font-weight:700; font-size:1.2rem; margin-bottom:0.5rem; color: var(--secondary-glow); text-shadow:0 0 5px var(--secondary-glow);}
+.result-value { font-size:2.5rem; font-weight:700; margin-bottom:0.5rem; font-family:'Orbitron',sans-serif; color: var(--glow-color); text-shadow:0 0 8px var(--glow-color);}
+.chart-container { max-width:600px; margin:2rem auto; }
+.back-button { margin-top:2rem; padding:0.8rem 2rem; font-size:1rem; background:transparent; border:2px solid var(--secondary-glow); color:var(--secondary-glow); border-radius:8px; cursor:pointer; font-weight:600; font-family:'Poppins',sans-serif; transition:0.3s;}
+.back-button:hover { background: var(--secondary-glow); color:#000; box-shadow:0 0 15px var(--secondary-glow); transform:translateY(-2px);}
+.alert { font-weight:700; padding:1rem 1.5rem; border-radius:12px; margin-top:1rem; font-size:1rem; display:flex; align-items:center; justify-content:center; gap:0.5rem;}
+.alert-high { background:#ff4d4d; color:#fff; box-shadow:0 0 20px rgba(255,77,77,0.5);}
+.alert-moderate { background:#ffc107; color:#000; box-shadow:0 0 20px rgba(255,193,7,0.5);}
+.alert-low { background:#4dff88; color:#000; box-shadow:0 0 20px rgba(77,255,136,0.5);}
+</style>
+</head>
+<body>
+
+<div class="theme-toggle">
+    <label class="switch">
+        <input type="checkbox" id="themeToggle">
+        <span class="slider"></span>
+    </label>
+</div>
+
+<!-- Navigation Panels -->
+<div class="nav-panel left-nav" id="leftNav">
+    <h2>Navigation</h2>
+    <ul>
+        <li><a href="/"><i class="bi bi-house-door"></i> Home</a></li>
+        <li><a href="/Disease_prediction"><i class="bi bi-heart-pulse"></i> Disease Prediction</a></li>
+        <li><a href="/LOS"><i class="bi bi-graph-up"></i> LOS Prediction</a></li>
+        <li><a href="/Cluster"><i class="bi bi-people"></i> Patient Cohorts</a></li>
+        <li><a href="/chat"><i class="bi bi-question-circle"></i> Help</a></li>
+    </ul>
+</div>
+
+<div class="nav-panel right-nav" id="rightNav">
+    <h2>AI Tools</h2>
+    <ul>
+        <li><a href="/Patient"><i class="bi bi-lightbulb"></i> Patient Risk Assessment</a></li>
+        <li><a href="/Summarizer"><i class="bi bi-file-earmark-text"></i> Notes Summarizer</a></li>
+        <li><a href="/Image-Diagnostics"><i class="bi bi-image"></i> Image Diagnostics</a></li>
+        <li><a href="/Senti"><i class="bi bi-chat-dots"></i> Feedback Analysis</a></li>
+        <li><a href="/admin"><i class="bi bi-table"></i> Admin Dashboard</a></li>
+    </ul>
+</div>
+
+<button class="toggle-btn left-toggle" id="leftToggle">☰</button>
+<button class="toggle-btn right-toggle" id="rightToggle">☰</button>
+
+<!-- Center Content -->
+<div class="center-content">
+    <h1 class="page-title"><i class="bi bi-heart-pulse"></i> Patient Risk Prediction</h1>
+    
+    <div class="prediction-container">
+        <form id="riskForm" class="risk-form">
+            <div class="input-group">
+                <label for="bp-systolic"><i class="bi bi-heart"></i> BP Systolic (mmHg)</label>
+                <input type="number" id="bp-systolic" name="bp_systolic" class="form-input" placeholder="e.g., 120" required>
+            </div>
+            <div class="input-group">
+                <label for="bp-diastolic"><i class="bi bi-heart"></i> BP Diastolic (mmHg)</label>
+                <input type="number" id="bp-diastolic" name="bp_diastolic" class="form-input" placeholder="e.g., 80" required>
+            </div>
+            <div class="input-group">
+                <label for="heart-rate"><i class="bi bi-activity"></i> Heart Rate (bpm)</label>
+                <input type="number" id="heart-rate" name="heart_rate" class="form-input" placeholder="e.g., 75" required>
+            </div>
+            <div class="input-group">
+                <label for="respiratory-rate"><i class="bi bi-lungs"></i> Respiratory Rate (breaths/min)</label>
+                <input type="number" id="respiratory-rate" name="respiratory_rate" class="form-input" placeholder="e.g., 16" required>
+            </div>
+            <div class="input-group">
+                <label for="temperature"><i class="bi bi-thermometer-half"></i> Temperature (°C)</label>
+                <input type="number" id="temperature" name="temperature" class="form-input" step="0.1" placeholder="e.g., 37.0" required>
+            </div>
+            <div class="input-group">
+                <label for="oxygen-saturation"><i class="bi bi-droplet"></i> Oxygen Saturation (%)</label>
+                <input type="number" id="oxygen-saturation" name="oxygen_saturation" class="form-input" placeholder="e.g., 98" required>
+            </div>
+            <div class="input-group">
+                <label for="med-adherence"><i class="bi bi-capsule"></i> Medication Adherence (0-1)</label>
+                <input type="number" id="med-adherence" name="med_adherence" class="form-input" step="0.01" min="0" max="1" placeholder="e.g., 0.85" required>
+            </div>
+            <div class="input-group">
+                <label for="symptom-severity"><i class="bi bi-exclamation-triangle"></i> Symptom Severity (1-10)</label>
+                <input type="number" id="symptom-severity" name="symptom_severity" class="form-input" min="1" max="10" placeholder="e.g., 5" required>
+            </div>
+            <button type="submit" class="predict-button"><i class="bi bi-calculator"></i> Predict Risk</button>
+        </form>
+    </div>
+
+    <!-- Results will be appended here -->
+    <div class="results-section" id="resultsSection">
+        <div class="result-card">
+            <div class="result-title"><i class="bi bi-arrow-down-circle"></i> Deterioration Risk</div>
+            <div class="result-value" id="detProb">--%</div>
+            <p id="detStatus">--</p>
+        </div>
+        <div class="result-card">
+            <div class="result-title"><i class="bi bi-arrow-repeat"></i> Readmission Risk</div>
+            <div class="result-value" id="readmProb">--%</div>
+            <p id="readmStatus">--</p>
+        </div>
+        <div class="chart-container">
+            <canvas id="riskChart"></canvas>
+        </div>
+        <div id="alertBox"></div>
+        <button class="back-button" id="backButton"><i class="bi bi-arrow-left"></i> Make Another Prediction</button>
+    </div>
+</div>
+
+<script>
+// Navigation toggles
+const body = document.body;
+const leftNav = document.getElementById('leftNav');
+const rightNav = document.getElementById('rightNav');
+const leftToggle = document.getElementById('leftToggle');
+const rightToggle = document.getElementById('rightToggle');
+const themeToggle = document.getElementById('themeToggle');
+let riskChartInstance = null;
+
+leftToggle.addEventListener('click', ()=>{ const hidden = leftNav.classList.toggle('nav-hidden-left'); leftToggle.classList.toggle('active', !hidden); });
+rightToggle.addEventListener('click', ()=>{ const hidden = rightNav.classList.toggle('nav-hidden-right'); rightToggle.classList.toggle('active', !hidden); });
+
+// Theme toggle
+if(localStorage.getItem('theme')==='dark'){ body.classList.add('dark-mode'); themeToggle.checked=true; }
+themeToggle.addEventListener('change', ()=>{ body.classList.toggle('dark-mode'); localStorage.setItem('theme',body.classList.contains('dark-mode')?'dark':'light'); });
+
+// Chart helper
+function updateChart(det_prob, readm_prob){
+    const isDark = body.classList.contains('dark-mode');
+    const textColor = isDark ? '#fff' : '#000';
+    const ctx = document.getElementById('riskChart').getContext('2d');
+    if(riskChartInstance) riskChartInstance.destroy();
+    riskChartInstance = new Chart(ctx,{
+        type:'bar',
+        data:{labels:['Deterioration Risk','Readmission Risk'],datasets:[{label:'Predicted Risk (%)', data:[det_prob,readm_prob], backgroundColor:['rgba(255,99,132,0.6)','rgba(54,162,235,0.6)'], borderColor:['#ff6384','#36a2eb'], borderWidth:2}]},
+        options:{responsive:true, scales:{y:{beginAtZero:true,max:100,ticks:{color:textColor}}, x:{ticks:{color:textColor}}}, plugins:{legend:{labels:{color:textColor}}}}
+    });
+}
+
+// Form submit
+$(document).ready(function(){
+    $('#riskForm').on('submit', function(e){
+        e.preventDefault();
+        const data = {};
+        $(this).serializeArray().forEach(f=>data[f.name]=parseFloat(f.value));
+        $.ajax({
+            url:'/api/patient-risk', type:'POST', contentType:'application/json', data:JSON.stringify(data), dataType:'json',
+            success:function(res){ 
+                if(res.success){
+                    $('#detProb').text(res.det_prob+'%'); 
+                    $('#detStatus').text(res.det_status);
+                    $('#readmProb').text(res.readm_prob+'%'); 
+                    $('#readmStatus').text(res.readm_status);
+                    let alertContent='';
+                    if(res.det_prob>70||res.readm_prob>70) alertContent='<div class="alert alert-high"><i class="bi bi-exclamation-triangle-fill"></i> ALERT: High-risk patient detected! Immediate review required.</div>';
+                    else if(res.det_prob>40||res.readm_prob>40) alertContent='<div class="alert alert-moderate"><i class="bi bi-exclamation-circle-fill"></i> Moderate-risk: Monitor patient closely.</div>';
+                    else alertContent='<div class="alert alert-low"><i class="bi bi-check-circle-fill"></i> Patient stable.</div>';
+                    $('#alertBox').html(alertContent);
+                    updateChart(res.det_prob,res.readm_prob);
+                    $('#riskForm').hide(); $('#resultsSection').addClass('visible');
+                } else alert('Prediction failed.');
+            },
+            error:function(){ alert('Server error or network failure.'); }
+        });
+    });
+    $('#backButton').on('click', function(){ $('#resultsSection').removeClass('visible'); $('#riskForm').show(); $('#riskForm')[0].reset(); });
+});
+</script>
+</body>
+</html>
