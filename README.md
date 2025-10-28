@@ -1,4 +1,4 @@
-# Healthcare-AI-ML-App
+# Healthcare-AI-App
 I have made an end-to-end AI web app for patient diagnostics and healthcare using publicly available and standard datasets
 
 Some of the main use cases are:-
